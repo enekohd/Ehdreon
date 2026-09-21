@@ -1,0 +1,14 @@
+# Entorno virtual local
+.venv/
+
+# Archivos generados por Python
+__pycache__/
+*.py[cod]
+
+# Metadatos de macOS
+.DS_Store
+
+# Archivos locales de variables de entorno
+.env
+.env.*
+!.env.example
