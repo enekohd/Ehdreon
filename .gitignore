@@ -12,3 +12,12 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Configuración local de VS Code
+.vscode/
+
+# Entorno temporal para verificar la instalación
+.venv-repro/
+
+# Entorno para verificar las versiones congeladas
+.venv-frozen/

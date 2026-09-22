@@ -1,0 +1,4 @@
+# Dependencias directas verificadas en el entorno actual.
+numpy==2.5.2
+pandas==3.0.5
+yfinance==1.6.0
