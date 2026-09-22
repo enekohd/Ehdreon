@@ -10,6 +10,7 @@ from src.backtesting.backtester import run_backtest
 from src.metrics import calculate_metrics
 from src.strategies.sma_strategies import apply_sma_strategies
 from src.trades import build_trade_log, calculate_trade_metrics
+from src.backtesting.benchmarks import calculate_buy_hold
 
 
 # ============================================================
@@ -171,17 +172,10 @@ for key, value in train_strategy_metrics.items():
 # 7.3. Benchmark Buy & Hold de TRAIN - NO COSTS
 # ------------------------------------------------------------
 
-# Versión actual: retornos entre aperturas, sin costes.
-train_buy_hold_returns = (
-    train_data["Open"]
-    .pct_change()
-    .fillna(0)
-)
-
-# Capitalizamos los retornos desde el capital inicial.
-train_buy_hold_equity = (
-    initial_capital
-    * (1 + train_buy_hold_returns).cumprod()
+# Calculamos el benchmark entre aperturas, sin coste de entrada.
+train_buy_hold_returns, train_buy_hold_equity = calculate_buy_hold(
+    train_data["Open"],
+    initial_capital=initial_capital
 )
 
 train_buy_hold_metrics = calculate_metrics(
@@ -218,17 +212,14 @@ assert train_relative_error < 1e-10, (
 # 7.3.1 Benchmark Buy & Hold de TRAIN - ENTRY COSTS
 # ------------------------------------------------------------
 
-# Conservamos los retornos originales y modificamos una copia.
-train_buy_hold_net_returns = train_buy_hold_returns.copy()
-
 # Al comprar en la primera apertura, el primer retorno
 # representa únicamente el coste de entrada.
-train_buy_hold_net_returns.iloc[0] = -transaction_cost
-
-train_buy_hold_net_equity = (
-    initial_capital
-    * ( 1 + train_buy_hold_net_returns).cumprod()
+train_buy_hold_net_returns, train_buy_hold_net_equity = calculate_buy_hold(
+    train_data["Open"],
+    initial_capital=initial_capital,
+    entry_cost=transaction_cost
 )
+
 train_buy_hold_net_metrics = calculate_metrics(
     train_buy_hold_net_equity,
     train_buy_hold_net_returns,
@@ -426,15 +417,9 @@ for key, value in test_strategy_metrics.items():
 # 12. BENCHMARK BUY & HOLD DE TEST: OPEN, SIN COSTES
 # ============================================================
 
-test_buy_hold_returns = (
-    test_data["Open"]
-    .pct_change()
-    .fillna(0)
-)
-
-test_buy_hold_equity = (
-    initial_capital
-    * ( 1 + test_buy_hold_returns).cumprod()
+test_buy_hold_returns, test_buy_hold_equity = calculate_buy_hold(
+    test_data["Open"],
+    initial_capital=initial_capital,
 )
 
 test_buy_hold_metrics = calculate_metrics(
@@ -473,17 +458,14 @@ print("\nBuy & Hold checks passed for TRAIN and TEST.")
 # 13. BENCHMARK BUY & HOLD DE TEST: CON COSTE DE ENTRADA
 # ============================================================
 
-# Conservamos los retornos originales y modificamos una copia.
-test_buy_hold_net_returns = test_buy_hold_returns.copy()
-
 # Al comprar en la primera apertura, el primer retorno
 # representa únicamente el coste de entrada.
-test_buy_hold_net_returns.iloc[0] = -transaction_cost
-
-test_buy_hold_net_equity = (
-    initial_capital
-    * ( 1 + test_buy_hold_net_returns).cumprod()
+test_buy_hold_net_returns, test_buy_hold_net_equity = calculate_buy_hold(
+    test_data["Open"],
+    initial_capital=initial_capital,
+    entry_cost=transaction_cost
 )
+
 test_buy_hold_net_metrics = calculate_metrics(
     test_buy_hold_net_equity,
     test_buy_hold_net_returns,
