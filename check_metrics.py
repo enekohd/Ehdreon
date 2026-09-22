@@ -1,3 +1,5 @@
+# Comprueba el capital inicial y el drawdown con datos sintéticos.
+# Los resultados esperados se calculan a mano.
 import pandas as pd
 
 from src.metrics import calculate_metrics
