@@ -2,8 +2,8 @@
 # 1. IMPORTACIONES
 # ============================================================
 
-# Librería externa para descargar datos de mercado.
-import yfinance as yf
+# Biblioteca estándar.
+from pathlib import Path
 
 # Funciones de los módulos de nuestro proyecto.
 from src.backtesting.backtester import run_backtest
@@ -11,6 +11,7 @@ from src.metrics import calculate_metrics
 from src.strategies.sma_strategies import apply_sma_strategies
 from src.trades import build_trade_log, calculate_trade_metrics
 from src.backtesting.benchmarks import calculate_buy_hold
+from src.data.loader import load_market_data
 
 
 # ============================================================
@@ -26,20 +27,34 @@ transaction_cost = 0.001
 # Las fechas anteriores pertenecen a TRAIN; las demás, a TEST.
 split_date = "2024-01-01"
 
+# La raíz se obtiene a partir de la ubicación de este archivo.
+project_root = Path(__file__).resolve().parent
 
-# ============================================================
-# 3. DESCARGA Y PREPARACIÓN DE LOS DATOS
-# ============================================================
-
-data = yf.download(
-    ticker,
-    start="2020-01-01",
-    end="2026-01-01",
+snapshot_path = (
+    project_root
+    / "data"
+    / "raw"
+    / "SPY_2020-01-01_2026-01-01_snapshot.csv"
 )
 
-# Para esta descarga de un solo activo, conservamos los nombres
-# de los campos de precio y eliminamos el nivel del ticker.
-data.columns = data.columns.get_level_values(0)
+metadata_path = (
+    project_root
+    / "data"
+    / "metadata"
+    / "SPY_2020-01-01_2026-01-01_snapshot.json"
+)
+
+# ============================================================
+# 3. CARGA LOCAL Y PREPARACIÓN DE LOS DATOS
+# ============================================================
+
+# El cargador reconstruye las fechas y valida los datos originales.
+data = load_market_data(snapshot_path, metadata_path)
+
+print("\nMarket data snapshot loaded:", snapshot_path)
+print("Raw rows:", len(data))
+print("First date:", data.index[0])
+print("Last date:", data.index[-1])
 
 # Retorno entre cierres consecutivos.
 # La primera fila queda sin retorno porque no tiene una fila anterior.

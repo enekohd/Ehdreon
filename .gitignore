@@ -21,3 +21,6 @@ __pycache__/
 
 # Entorno para verificar las versiones congeladas
 .venv-frozen/
+
+# Instantáneas locales de datos de mercado
+data/raw/

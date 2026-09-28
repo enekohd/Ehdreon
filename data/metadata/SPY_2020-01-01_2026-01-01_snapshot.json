@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "dataset_id": "SPY_2020-01-01_2026-01-01_snapshot",
+  "file": "data/raw/SPY_2020-01-01_2026-01-01_snapshot.csv",
+  "sha256": "9662b617273dbb09abe048bfc6408fc191fb71a5c8183963658325b44aa01d7d",
+  "source": "yfinance",
+  "ticker": "SPY",
+  "requested_start": "2020-01-01",
+  "requested_end": "2026-01-01",
+  "first_observation": "2020-01-02",
+  "last_observation": "2025-12-31",
+  "rows": 1508,
+  "columns": ["Close", "High", "Low", "Open", "Volume"],
+  "index_name": "Date",
+  "downloaded_at": null,
+  "auto_adjust": null,
+  "notes": "El momento exacto de descarga y el valor efectivo de auto_adjust no quedaron registrados al crear esta instantánea."
+}

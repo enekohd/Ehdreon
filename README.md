@@ -77,25 +77,27 @@ del backtester y los benchmarks Buy & Hold.
 
 ## Ejecución
 
-```bash
-./.venv/bin/python main.py
-```
+El programa carga una instantánea local de SPY, verifica su huella
+SHA-256 y valida sus datos antes de ejecutar los backtests.
 
-El programa descarga datos de SPY mediante yfinance y muestra:
+Para ejecutarlo se necesitan:
 
-- Los periodos TRAIN y TEST.
-- Las métricas de la estrategia SMA.
-- Los benchmarks Buy & Hold, con y sin coste de entrada.
-- Las operaciones cerradas y sus métricas.
+- `data/raw/SPY_2020-01-01_2026-01-01_snapshot.csv`
+- `data/metadata/SPY_2020-01-01_2026-01-01_snapshot.json`
 
-Esta ejecución requiere acceso a internet.
+El CSV está excluido de Git y debe proporcionarse por separado.
+Los metadatos permiten comprobar su identidad, pero no reconstruirlo.
 
-La configuración principal está en `main.py`: activo, fechas,
-capital inicial, coste de transacción y ventanas de las SMA.
+La ejecución de `main.py` no necesita conexión a internet una vez
+instaladas las dependencias y disponible la instantánea correcta.
 
 ## Limitaciones actuales
 
-- Los datos se descargan de nuevo en cada ejecución y pueden cambiar.
+- El CSV local no está incluido en Git y necesita conservarse por separado.
+- No se registraron el momento exacto de descarga ni el valor efectivo
+  de `auto_adjust` de esta instantánea.
+- La huella identifica el archivo, pero no demuestra la exactitud
+  de los precios ni que estén todas las sesiones esperadas.
 - El modelo de costes es simplificado.
 - El retorno neto del registro de operaciones es aproximado y no
     concilia exactamente con la capitalización del backtester.
