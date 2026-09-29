@@ -13,12 +13,12 @@ def execute_buy_all_cash(
 
     if not math.isfinite(cash) or cash <= 0:
         raise ValueError("Cash must be finite and greater than zero.")
-    
+
     if not math.isfinite(price) or price <= 0:
         raise ValueError("Price must be finite and greater than zero.")
 
     if(
-        not math.isfinite(commission_rate) 
+        not math.isfinite(commission_rate)
         or not 0 <= commission_rate < 1
     ):
         raise ValueError(
@@ -73,4 +73,3 @@ def execute_sell_all(
         "cash_received": cash_received,
         "quantity_after": 0.0,
     }
-    
