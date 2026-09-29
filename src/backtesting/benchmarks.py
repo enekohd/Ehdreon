@@ -14,6 +14,9 @@ def calculate_buy_hold(
 
     Devuelve:
     Una pareja (returns, equity).
+
+    La comisión es una fracción del importe comprado y se paga
+    con el capital inicial. No se simula una venta al final.
     """
 
     # 1. Calcular los retornos entre aperturas.
@@ -22,8 +25,10 @@ def calculate_buy_hold(
        open_prices.pct_change().fillna(0)
     )
 
-    # 2. Incorporar el coste de entrada en la primera fila.
-    returns.iloc[0] = -entry_cost
+    # 2. Reservamos la comisión dentro del capital disponible.
+    # La comisión se calcula sobre el importe comprado.
+    # El primer retorno representa únicamente el coste de entrada.
+    returns.iloc[0] = 1.0 / (1.0 + entry_cost) - 1.0
 
     # 3. Construir la equity mediante capitalización compuesta.
     equity = initial_capital * (1 + returns).cumprod()

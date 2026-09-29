@@ -1,6 +1,6 @@
 import pandas as pd
 
-def build_trade_log(data, transaction_cost = 0.0    ):
+def build_trade_log(data):
 
     trades = []
 
@@ -8,6 +8,7 @@ def build_trade_log(data, transaction_cost = 0.0    ):
 
     entry_date = None
     entry_price = None
+
 
     for i in range(1, len(data)):
 
@@ -22,8 +23,18 @@ def build_trade_log(data, transaction_cost = 0.0    ):
 
             in_position = True
 
+            # 1. Identificamos cuándo y a qué precio hemos comprado.
             entry_date = current_date
             entry_price = current_price
+
+            # 2. Recuperamos las unidades y la comisión de la ejecución.
+            entry_quantity = data["Quantity"].iloc[i]
+            entry_fee = data["Fee"].iloc[i]
+
+            # 3. Calculamos los importes usando los valores anteriores.
+            entry_notional = entry_quantity * entry_price
+            entry_outlay = entry_notional + entry_fee
+
 
         #Exit 1 -> 0
         if previous_position == 1 and current_position == 0:
@@ -37,9 +48,15 @@ def build_trade_log(data, transaction_cost = 0.0    ):
                     exit_price - entry_price
                 ) / entry_price
 
-                trade_return = (
-                    gross_return - 2 * transaction_cost
-                )
+                # En este modelo no hay compras adicionales ni ventas parciales:
+                # vendemos todas las unidades adquiridas en la entrada.
+                exit_notional = entry_quantity * exit_price
+                exit_fee = data["Fee"].iloc[i]
+
+                gross_pnl = exit_notional - entry_notional
+                net_pnl = gross_pnl - entry_fee - exit_fee
+
+                trade_return = net_pnl / entry_outlay
 
                 holding_days = (
                     exit_date - entry_date
@@ -52,7 +69,12 @@ def build_trade_log(data, transaction_cost = 0.0    ):
                     "Exit Price" : exit_price,
                     "Gross Return" : gross_return,
                     "Net Return" : trade_return,
-                    "Holding days" : holding_days
+                    "Holding days" : holding_days,
+                    "Quantity": entry_quantity,
+                    "Entry Fee": entry_fee,
+                    "Exit Fee": exit_fee,
+                    "Gross PnL": gross_pnl,
+                    "Net PnL": net_pnl,
                 })
 
                 in_position = False

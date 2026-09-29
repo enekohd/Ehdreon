@@ -248,7 +248,7 @@ for key,value in train_buy_hold_net_metrics.items():
 # Verificación alternativa
 train_net_expected_final_value = (
     initial_capital
-    * (1 - transaction_cost)
+    / (1 + transaction_cost)
     * train_data["Open"].iloc[-1]
     / train_data["Open"].iloc[0]
 )
@@ -267,7 +267,7 @@ assert train_buy_hold_returns.iloc[0] == 0.0
 
 assert abs(
     train_buy_hold_net_equity.iloc[0]
-    - initial_capital * (1 - transaction_cost)
+    - initial_capital / (1 + transaction_cost)
 ) < 1e-8
 
 
@@ -278,8 +278,7 @@ assert abs(
 # Empareja entradas y salidas.
 # Las posiciones abiertas al final no aparecen como trades cerrados.
 train_trade_log = build_trade_log(
-    train_results,
-    transaction_cost=transaction_cost,
+    train_results
 )
 
 print("\n--- TRAIN: TRADE LOG ---")
@@ -494,7 +493,7 @@ for key,value in test_buy_hold_net_metrics.items():
 # Verificación alternativa
 test_net_expected_final_value = (
     initial_capital
-    * (1 - transaction_cost)
+    / (1 + transaction_cost)
     * test_data["Open"].iloc[-1]
     / test_data["Open"].iloc[0]
 )
@@ -513,7 +512,7 @@ assert test_buy_hold_returns.iloc[0] == 0.0
 
 assert abs(
     test_buy_hold_net_equity.iloc[0]
-    - initial_capital * (1 - transaction_cost)
+    - initial_capital / (1 + transaction_cost)
 ) < 1e-8
 
 # ============================================================
@@ -522,8 +521,7 @@ assert abs(
 
 # El contexto permite detectar la entrada en la primera sesión.
 test_trade_log = build_trade_log(
-    test_with_context_results,
-    transaction_cost=transaction_cost
+    test_with_context_results
 )
 
 print("\n--- TEST: TRADE LOG ---")
@@ -563,7 +561,7 @@ test_trade_metrics = calculate_trade_metrics(
     test_trade_log
 )
 
-print("\n--- TEST: CLOSED TRADE METRICS — APPROXIMATE NET RETURNS ---")
+print("\n--- TEST: CLOSED TRADE METRICS — EXECUTION-BASED NET RETURNS ---")
 for key,value in test_trade_metrics.items():
     print(key, ":", value)
 

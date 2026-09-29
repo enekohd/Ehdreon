@@ -40,7 +40,7 @@ np.testing.assert_allclose(
 
 np.testing.assert_allclose(
     net_returns.to_numpy(),
-    [-0.001, 0.10, -0.10],
+    [1.0 / 1.001 - 1.0, 0.10, -0.10],
     rtol=0,
     atol=1e-12,
 )
@@ -52,9 +52,15 @@ np.testing.assert_allclose(
     atol=1e-8,
 )
 
+# Calculamos las unidades esperadas independientemente del benchmark.
+expected_quantity = 1000.0 / (100.0 * 1.001)
+
+# Conservamos esas unidades durante las tres aperturas.
+expected_net_equity = expected_quantity * open_prices
+
 np.testing.assert_allclose(
     net_equity.to_numpy(),
-    [999.0, 1098.90, 989.01],
+    expected_net_equity.to_numpy(),
     rtol=0,
     atol=1e-8,
 )
