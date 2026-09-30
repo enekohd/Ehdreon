@@ -85,7 +85,7 @@ def run_backtest(data,
         #La equity actual sera la referencia de la siguiente apertura.
         previous_equity = equity
 
-    #6. Incorporamos los resultados de la siguiente apertura.
+    #6. Incorporamos los resultados de cada apertura al DataFrame.
     result_columns = [
         "Cash",
         "Quantity",

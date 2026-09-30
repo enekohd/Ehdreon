@@ -62,14 +62,16 @@ def build_trade_log(data):
                     exit_date - entry_date
                 ).days
 
+
+                # Guardamos una fila por cada operación cerrada.
                 trades.append({
-                    "Entry Date" : entry_date,
-                    "Entry Price" : entry_price,
-                    "Exit Date" : exit_date,
-                    "Exit Price" : exit_price,
-                    "Gross Return" : gross_return,
-                    "Net Return" : trade_return,
-                    "Holding days" : holding_days,
+                    "Entry Date": entry_date,
+                    "Entry Price": entry_price,
+                    "Exit Date": exit_date,
+                    "Exit Price": exit_price,
+                    "Gross Return": gross_return,
+                    "Net Return": trade_return,
+                    "Holding days": holding_days,
                     "Quantity": entry_quantity,
                     "Entry Fee": entry_fee,
                     "Exit Fee": exit_fee,
@@ -77,15 +79,43 @@ def build_trade_log(data):
                     "Net PnL": net_pnl,
                 })
 
+                # La operación ya está cerrada.
                 in_position = False
 
-    trade_log  = pd.DataFrame(trades)
+    # El registro mantiene su estructura incluso sin operaciones cerradas.
+    columns = [
+        "Entry Date",
+        "Entry Price",
+        "Exit Date",
+        "Exit Price",
+        "Gross Return",
+        "Net Return",
+        "Holding days",
+        "Quantity",
+        "Entry Fee",
+        "Exit Fee",
+        "Gross PnL",
+        "Net PnL",
+    ]
+    trade_log  = pd.DataFrame(trades, columns=columns)
 
     return trade_log
 
 def calculate_trade_metrics(trade_log):
 
     number_of_trades = len(trade_log)
+
+    # Sin operaciones cerradas no podemos estimar estas estadísticas.
+    if number_of_trades == 0:
+        return {
+            "Number of Trades": 0,
+            "Trade Win Rate": None,
+            "Average Win": None,
+            "Average Loss": None,
+            "Profit Factor": None,
+            "Expectancy": None,
+            "Average Holding Days": None,
+        }
 
     winning_trades = trade_log[trade_log["Net Return"] > 0]
     losing_trades = trade_log[trade_log["Net Return"] < 0]
