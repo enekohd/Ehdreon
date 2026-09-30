@@ -22,9 +22,13 @@ def calculate_metrics(equity, returns, position=None, trade=None, *, initial_cap
 
     annualized_return = returns.mean() * 252
 
-    sharpe_ratio = (
-        annualized_return / annualized_volatility
-    )
+    #Solo calculamos el cociente si la volatilidad es finita y positiva
+    if(
+        np.isfinite(annualized_volatility) and annualized_volatility > 0
+    ):
+        sharpe_ratio = annualized_return / annualized_volatility
+    else:
+        sharpe_ratio = None
 
     running_max = equity.cummax().clip(lower=initial_capital)
 
@@ -34,17 +38,37 @@ def calculate_metrics(equity, returns, position=None, trade=None, *, initial_cap
 
     max_drawdown = drawdown.min()
 
-    max_drawdown_date = drawdown.idxmin()
+    max_drawdown_date = (
+        drawdown.idxmin()
+        if max_drawdown < 0
+        else None
+    )
 
     active_returns = returns[returns != 0]
+    positive_returns = returns[returns > 0]
+    negative_returns = returns[returns < 0]
 
-    positive_days = (active_returns > 0).sum()
-    negative_days = (active_returns < 0).sum()
+    positive_days = len(positive_returns)
+    negative_days = len(negative_returns)
 
-    positive_day_ratio = positive_days / len(active_returns)
+    # La proporción se calcula sobre días con retorno distinto de cero.
+    positive_day_ratio = (
+        positive_days / len(active_returns)
+        if not active_returns.empty
+        else None
+    )
 
-    average_positive_returns = returns[returns > 0].mean()
-    average_negative_returns = returns[returns < 0].mean()
+    average_positive_returns = (
+        positive_returns.mean()
+        if not positive_returns.empty
+        else None
+    )
+
+    average_negative_returns = (
+        negative_returns.mean()
+        if not negative_returns.empty
+        else None
+    )
 
     exposure = position.mean() if position is not None else None
 
