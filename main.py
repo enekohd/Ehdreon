@@ -12,6 +12,7 @@ from src.strategies.sma_strategies import apply_sma_strategies
 from src.trades import build_trade_log, calculate_trade_metrics
 from src.backtesting.benchmarks import calculate_buy_hold
 from src.data.loader import load_market_data
+from src.config import ExperimentConfig
 
 
 # ============================================================
@@ -19,13 +20,14 @@ from src.data.loader import load_market_data
 # ============================================================
 
 ticker = "SPY"
-initial_capital = 10000
 
-# Coste proporcional por cambio de posición: 0.001 equivale al 0.1 %.
-transaction_cost = 0.001
+#Unica configuracion del experimento para esta ejecucion.
+config = ExperimentConfig()
 
-# Las fechas anteriores pertenecen a TRAIN; las demás, a TEST.
-split_date = "2024-01-01"
+# Conservamos temporalmente los nombres que utiliza el resto del main
+initial_capital = config.initial_capital
+transaction_cost = config.transaction_cost
+split_date = config.split_date
 
 # La raíz se obtiene a partir de la ubicación de este archivo.
 project_root = Path(__file__).resolve().parent
@@ -34,14 +36,14 @@ snapshot_path = (
     project_root
     / "data"
     / "raw"
-    / "SPY_2020-01-01_2026-01-01_snapshot.csv"
+    / f"{config.dataset_id}.csv"
 )
 
 metadata_path = (
     project_root
     / "data"
     / "metadata"
-    / "SPY_2020-01-01_2026-01-01_snapshot.json"
+    / f"{config.dataset_id}.json"
 )
 
 # ============================================================
@@ -87,8 +89,8 @@ data["BuyHold"] = (
 # Estas medias utilizan únicamente el cierre actual y los anteriores.
 strategy_data = apply_sma_strategies(
     data,
-    fast_window=50,
-    slow_window=200,
+    fast_window=config.fast_window,
+    slow_window=config.slow_window,
 )
 
 
