@@ -36,8 +36,6 @@ def build_experiment_record(
     }
     return experiment_record
 
-
-
 def save_experiment_record(record: dict, path: Path) -> None:
     """Guarda un registro como JSON sin sobreescribir archivos existentes"""
 
@@ -49,3 +47,17 @@ def save_experiment_record(record: dict, path: Path) -> None:
 
     with path.open("x", encoding="utf-8") as file:
         file.write(record_json)
+
+def attach_experiment_results(
+        record: dict,
+        results: dict,
+) -> dict:
+    """Devuelve una copia del registro con sus resultados."""
+
+    if "results" in record:
+        raise ValueError("The experiment record already contains results.")
+
+    completed_record = deepcopy(record)
+    completed_record["results"] = deepcopy(results)
+
+    return completed_record

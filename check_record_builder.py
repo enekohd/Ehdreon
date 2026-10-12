@@ -1,7 +1,8 @@
 from src.config import ExperimentConfig
-from src.experiments.records import build_experiment_record
+from src.experiments.records import build_experiment_record, attach_experiment_results
 from datetime import datetime, timedelta
 from uuid import UUID
+from copy import deepcopy
 
 
 custom_config = ExperimentConfig(fast_window=20)
@@ -99,3 +100,59 @@ assert "test-library" not in built_record["environment"]["dependencies"], (
 print("Experiment record input isolation checks passed.")
 
 print("Experiment record builder checks passed.")
+
+sample_results = {
+    "train": {
+        "strategy": {
+            "metrics": {
+                "Final Value": {
+                    "value": 1010.0,
+                    "status": "finite",
+                },
+            },
+        },
+    },
+}
+
+completed_record = attach_experiment_results(
+    built_record,
+    sample_results,
+)
+
+assert "results" not in built_record, (
+    "The experiment record may not receive results."
+)
+
+assert completed_record["experiment_id"] == built_record["experiment_id"],(
+    "The id does not match."
+)
+
+assert completed_record["results"] == sample_results, (
+    "The incorporated results are not the same as sample_results."
+)
+
+sample_results["train"]["strategy"]["metrics"]["Final Value"]["value"] = 999.0
+
+assert completed_record["results"]["train"]["strategy"]["metrics"]["Final Value"]["value"] == 1010.0, (
+    "Attaching results must not modify the original record."
+)
+
+#Conservamos una copia para comprobar que el rechazo no modifica nada.
+before_attempt = deepcopy(completed_record)
+
+try:
+    attach_experiment_results(completed_record, sample_results)
+except ValueError as error:
+    assert "already contains results" in str(error), (
+        f"Unexpected error: {error}"
+    )
+else:
+    raise AssertionError(
+        "A record qith existing results was accepted."
+    )
+
+assert completed_record == before_attempt, (
+    "A rejected attachment must not modify the existing record."
+)
+
+print("Experiment result attachment checks passed.")

@@ -1,7 +1,5 @@
 from src.config import ExperimentConfig
 import json
-import platform
-from importlib.metadata import version
 from pathlib import Path
 
 from src.data.integrity import (
@@ -9,11 +7,15 @@ from src.data.integrity import (
     verify_snapshot_integrity,
 )
 
-import subprocess
 from tempfile import TemporaryDirectory
 from src.experiments.records import (
     build_experiment_record,
     save_experiment_record,
+)
+
+from src.experiments.provenance import (
+    collect_code_info,
+    collect_environment_info,
 )
 
 config = ExperimentConfig()
@@ -39,41 +41,36 @@ print("Matching snapshot accepted.")
 
 calculated_sha256 = calculate_sha256(snapshot_path)
 
-commit_result = subprocess.run(
-    ["git", "rev-parse", "HEAD"],
-    cwd=project_root,
-    capture_output=True,
-    text=True,
-    check=True,
+code_info = collect_code_info(project_root)
+
+environment_info = collect_environment_info()
+
+assert set(environment_info) == {
+    "python_version",
+    "dependencies",
+}, "Unexpected environment metadata fields."
+
+assert isinstance(environment_info["python_version"], str)
+assert environment_info["python_version"], (
+    "Python version must not be empty."
 )
 
-# Texto con los cambios y archivos nuevos detectados por Git.
-git_commit = commit_result.stdout.strip()
+dependencies = environment_info["dependencies"]
 
-status_results = subprocess.run(
-    ["git", "status", "--porcelain", "--untracked-files=all"],
-    cwd=project_root,
-    capture_output=True,
-    text=True,
-    check=True,
+assert isinstance(dependencies, dict)
+assert set(dependencies) == {"numpy", "pandas"}, (
+    "Unexpected dependencies in the minimal environment record."
 )
 
-# Indicador: ¿ese texto contiene alguna entrada?
-git_satus_output = status_results.stdout.strip()
-working_tree_dirty = bool(git_satus_output)
+for package_name, package_version in dependencies.items():
+    assert isinstance(package_version, str), (
+        f"{package_name}: version must be a string."
+    )
+    assert package_version, (
+        f"{package_name}: version must not be empty."
+    )
 
-code_info = {
-    "commit":git_commit,
-    "working_tree_dirty":working_tree_dirty,
-}
-
-environment_info = {
-    "python_version": platform.python_version(),
-    "dependencies": {
-        "numpy": version("numpy"),
-        "pandas": version("pandas"),
-    },
-}
+print("Environment metadata contract checks passed.")
 
 experiment_record = build_experiment_record(
     config,

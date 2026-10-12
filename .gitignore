@@ -24,3 +24,6 @@ __pycache__/
 
 # Instantáneas locales de datos de mercado
 data/raw/
+
+# Registros locales generados por los experimentos.
+/artifacts/experiments/
