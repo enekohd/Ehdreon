@@ -11,6 +11,7 @@ def build_experiment_record(
     dataset_sha256: str,
     code_info: dict,
     environment_info: dict,
+    conventions: dict,
 )-> dict:
     """Construye los metadatos iniciales de una ejecución."""
 
@@ -25,7 +26,7 @@ def build_experiment_record(
     experiment_record = {
         "experiment_id": experiment_id,
         "created_at": created_at,
-        "schema_version": 1,
+        "schema_version": 2,
         "config": config_data,
         "dataset": {
                 "dataset_id": config.dataset_id,
@@ -33,6 +34,7 @@ def build_experiment_record(
             },
         "code": deepcopy(code_info),
         "environment": deepcopy(environment_info),
+        "conventions": deepcopy(conventions),
     }
     return experiment_record
 

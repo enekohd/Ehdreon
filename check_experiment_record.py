@@ -18,6 +18,8 @@ from src.experiments.provenance import (
     collect_environment_info,
 )
 
+from src.experiments.conventions import build_experiment_conventions
+
 config = ExperimentConfig()
 
 project_root = Path(__file__).resolve().parent
@@ -77,6 +79,7 @@ experiment_record = build_experiment_record(
     dataset_sha256=calculated_sha256,
     code_info=code_info,
     environment_info=environment_info,
+    conventions=build_experiment_conventions(),
 )
 
 record_json = json.dumps(

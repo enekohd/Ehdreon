@@ -17,11 +17,19 @@ environment_info = {
     "dependencies": {},
 }
 
+conventions = {
+    "conventions_version": 1,
+    "execution": {
+        "execution_time": "next_session_open",
+    },
+}
+
 built_record = build_experiment_record(
     custom_config,
     dataset_sha256="test-hash",
     code_info=code_info,
     environment_info=environment_info,
+    conventions=conventions,
 )
 
 #Compruebo que la ventana guardada es 20
@@ -48,9 +56,14 @@ assert built_record["environment"] == environment_info,(
     "The environment dict changed."
 )
 
-#Compruebo que el schema_version == 1
-assert built_record["schema_version"] == 1, (
-    "Schema version is not equal to one."
+#Compruebo que las conventions son iguales que las que le paso
+assert built_record["conventions"] == conventions, (
+    "The record must preserve the supplied conventions."
+)
+
+#Compruebo que el schema_version == 2
+assert built_record["schema_version"] == 2, (
+    "New experiment records must use schema version 2."
 )
 
 parsed_id = UUID(built_record["experiment_id"])
@@ -66,13 +79,14 @@ assert parsed_created_at.utcoffset() == timedelta(0), (
     "The timezone utc is incorrect."
 )
 
-#Compruebo que una segunda llamada al constructor con los mismos dartos genera
+#Compruebo que una segunda llamada al constructor con los mismos datos genera
 # ids diferentes
 built_record_2 = build_experiment_record(
     custom_config,
     dataset_sha256="test-hash",
     code_info=code_info,
     environment_info=environment_info,
+    conventions=conventions
 )
 
 assert built_record["experiment_id"] != built_record_2["experiment_id"],(
@@ -87,10 +101,18 @@ print("Experiment record identity checks passed.")
 code_info["commit"] = "changed-after-building"
 environment_info["dependencies"]["test-library"] = "0.0.0"
 
-#Compruebo que el commir del registro no ha cambiado
+#Compruebo que el commit del registro no ha cambiado
 assert built_record["code"]["commit"] == "test-commit", (
     "Changing input code metadata must not alter the built record."
 )
+
+#Compruebo que las conventions no cambian despues de haberlas construido.
+conventions["execution"]["execution_time"] = "changed-after-building"
+
+assert (
+    built_record["conventions"]["execution"]["execution_time"]
+    == "next_session_open"
+), "Changing input conventions must not alter the built record."
 
 #Compruebo que no se ha añadido test-library a las dependencias
 assert "test-library" not in built_record["environment"]["dependencies"], (
