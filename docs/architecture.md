@@ -20,7 +20,40 @@ Las posiciones abiertas no se liquidan automáticamente al final del periodo.
 8. Los resultados se serializan y se adjuntan al registro.
 9. El registro se guarda como JSON y se comprueba mediante relectura.
 
-main.py coordina actualmente estos pasos.
+main.py coordina la carga, la obtención de metadatos, la presentación
+y la persistencia. Delega el cálculo en src/experiments/runner.py.
+
+## Ejecución del experimento
+
+run_experiment(data, config):
+
+- Recibe el snapshot OHLCV ya cargado y validado.
+- Trabaja sobre una copia.
+- Prepara retornos y señales SMA.
+- Separa TRAIN y TEST.
+- Añade una fila de contexto de ejecución a TEST.
+- Evalúa ambos periodos con capital inicial independiente.
+- Devuelve resultados de cálculo, sin serializarlos.
+
+evaluate_period(backtest_data, evaluation_index, config):
+
+- Admite evaluar todas las filas o excluir una única fila inicial
+  de contexto.
+- Ejecuta el backtest con el contexto necesario.
+- Calcula las métricas de cartera solo sobre las fechas evaluadas.
+- Reconstruye las operaciones utilizando el resultado con contexto.
+- Calcula los benchmarks desde la primera apertura evaluada.
+- Devuelve curvas, métricas, operaciones y benchmarks.
+
+Estas funciones no cargan archivos, consultan Git, imprimen ni guardan
+resultados.
+
+La preparación conserva el comportamiento anterior: elimina la primera
+fila por el retorno inicial ausente y mantiene la columna global BuyHold
+por compatibilidad. Esta columna no sustituye los benchmarks por periodo.
+
+La evaluación requiere al menos dos observaciones y un intervalo
+de al menos un día, de acuerdo con las métricas diarias actuales.
 
 ## Señales, ejecución y contabilidad
 
@@ -84,6 +117,8 @@ Una métrica no disponible se distingue de una métrica cuyo valor es cero.
 - records.py: construye registros, adjunta resultados y guarda JSON.
 - serialization.py: representa métricas y fechas sin alterar sus cálculos.
 - results.py: organiza resultados por periodo, estrategia y benchmark.
+- runner.py: prepara y ejecuta el cálculo de TRAIN y TEST sin operaciones
+  de entrada/salida.
 
 Cada registro contiene identidad, configuración, dataset y hash,
 información del código, entorno y resultados.
