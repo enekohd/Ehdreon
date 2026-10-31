@@ -30,9 +30,10 @@ run_experiment(data, config):
 - Recibe el snapshot OHLCV ya cargado y validado.
 - Trabaja sobre una copia.
 - Prepara retornos y señales SMA.
-- Separa TRAIN y TEST.
-- Añade una fila de contexto de ejecución a TEST.
-- Evalúa ambos periodos con capital inicial independiente.
+- Separa TRAIN, VALIDATION y TEST mediante split_temporal_data.
+- Añade exactamente una fila anterior de contexto a VALIDATION y TEST,
+  sin incluir observaciones posteriores al final de cada periodo.
+- Evalúa los tres periodos con capital inicial independiente.
 - Devuelve resultados de cálculo, sin serializarlos.
 
 evaluate_period(backtest_data, evaluation_index, config):
@@ -89,17 +90,36 @@ No se descuentan otra vez del retorno.
 
 ## Evaluación temporal
 
-TRAIN y TEST se simulan con capital inicial independiente.
+La configuración define dos fronteras:
 
-TEST utiliza una fila histórica de contexto para determinar su primera
-operación. Esa fila no se incluye en las métricas ni en el periodo
-de evaluación informado.
+- TRAIN: fechas anteriores a validation_start.
+- VALIDATION: fechas desde validation_start, inclusive, hasta test_start,
+  exclusive.
+- TEST: fechas desde test_start, inclusive.
 
-El registro de operaciones utiliza el contexto necesario para reconocer
-la primera entrada de TEST.
+Los valores actuales son validation_start="2023-01-01" y
+test_start="2024-01-01". Las fronteras no necesitan coincidir con sesiones
+de mercado.
 
-El periodo TEST actual ya ha sido observado durante el desarrollo.
-No es un holdout final intacto.
+src/research/splits.py divide los datos sin modificarlos ni añadir
+contexto. Exige fechas válidas, únicas, ordenadas y sin zona horaria,
+además de tres particiones no vacías.
+
+Cada periodo se simula con capital inicial independiente. No se heredan
+efectivo ni unidades del periodo anterior.
+
+Las SMA utilizan historia disponible hasta cada fecha. VALIDATION y TEST
+reciben una fila anterior de contexto para ejecutar la señal previa.
+Esa fila queda fuera de las métricas y de las fechas informadas.
+El registro de operaciones conserva el contexto para reconocer una
+posible entrada en la primera apertura evaluada.
+
+VALIDATION se destina al desarrollo y selección de candidatos.
+El TEST actual ya se ha observado durante el desarrollo y no constituye
+un holdout final intacto. Cambiar las fronteras no elimina ese conocimiento.
+
+Dividir los datos no garantiza por sí solo ausencia de sobreajuste.
+Todavía no se implementan selección automática ni walk-forward.
 
 ## Métricas y operaciones
 
@@ -137,6 +157,10 @@ El modo de creación exclusiva impide sobrescribir archivos existentes.
 
 Los resultados generados se excluyen de Git.
 Esta exclusión no constituye una copia de seguridad.
+
+Los nuevos registros utilizan schema_version=3 y conventions_version=2.
+Incluyen las dos fronteras temporales y resultados de los tres periodos.
+Los registros anteriores se conservan sin modificar.
 
 ## Limitaciones de reproducibilidad
 

@@ -61,8 +61,8 @@ assert built_record["conventions"] == conventions, (
     "The record must preserve the supplied conventions."
 )
 
-#Compruebo que el schema_version == 2
-assert built_record["schema_version"] == 2, (
+#Compruebo que el schema_version == 3
+assert built_record["schema_version"] == 3, (
     "New experiment records must use schema version 2."
 )
 

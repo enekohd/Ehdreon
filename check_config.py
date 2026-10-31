@@ -15,6 +15,9 @@ assert alternative_config.slow_window == 200
 #Crear una configuracion alternativa no cambia la original.
 assert config.fast_window == 50
 
+assert config.validation_start == "2023-01-01"
+assert config.test_start == "2024-01-01"
+
 print(config)
 print(alternative_config)
 print("Configuration defaults and overrides checks passed.")
@@ -35,7 +38,31 @@ invalid_cases = [
     ({"fast_window": 2.5}, TypeError, "fast_window"),
     ({"fast_window": True}, TypeError, "fast_window"),
     ({"fast_window": 200}, ValueError, "fast_window"),
-    ({"split_date": "2024-02-30"}, ValueError, "split_date"),
+    (
+        {"validation_start": "2023-02-30"},
+        ValueError,
+        "validation_start",
+    ),
+    (
+        {"test_start": "2024-02-30"},
+        ValueError,
+        "test_start",
+    ),
+    (
+        {"validation_start": 20230101},
+        TypeError,
+        "validation_start",
+    ),
+    (
+        {"validation_start": "2024-01-01"},
+        ValueError,
+        "must precede",
+    ),
+    (
+        {"validation_start": "2025-01-01"},
+        ValueError,
+        "must precede",
+    ),
     ({"dataset_id": ""}, ValueError, "dataset_id"),
     ({"dataset_id": "../another_dataset"}, ValueError, "dataset_id"),
     ({"dataset_id": 123}, TypeError, "dataset_id"),

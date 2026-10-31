@@ -36,7 +36,6 @@ config = ExperimentConfig()
 # Conservamos temporalmente los nombres que utiliza el resto del main
 initial_capital = config.initial_capital
 transaction_cost = config.transaction_cost
-split_date = config.split_date
 
 # La raíz se obtiene a partir de la ubicación de este archivo.
 project_root = Path(__file__).resolve().parent
@@ -82,17 +81,28 @@ print("Last date:", data.index[-1])
 result = run_experiment(data, config)
 
 train = result["train"]
+validation = result["validation"]
 test = result["test"]
 
 # ============================================================
 # 5. COMPROBACIONES DE INTEGRACIÓN Y PRESENTACIÓN
 # ============================================================
 
+assert set(result) == {"train", "validation", "test"}, (
+    "The experiment must contain all three evaluation periods."
+)
+
 train_index = train["backtest"].index
+validation_index = validation["backtest"].index
 test_index = test["backtest"].index
 
-assert train_index.intersection(test_index).empty
-assert train_index.max() < test_index.min()
+assert train_index.max() < validation_index.min(), (
+    "TRAIN must finish before VALIDATION starts."
+)
+
+assert validation_index.max() < test_index.min(), (
+    "VALIDATION must finish before TEST starts."
+)
 
 for period_name, period in result.items():
     backtest = period["backtest"]
@@ -159,64 +169,49 @@ for period_name, period in result.items():
         print(name, ":", value)
 
 # ============================================================
-# 6. ADAPTACIÓN TEMPORAL AL BLOQUE DE REGISTRO EXISTENTE
+# 6. RESULTADOS ESTRUCTURADOS DE TODOS LOS PERIODOS
 # ============================================================
+experiment_results = {}
 
-train_results = train["backtest"]
-train_strategy_metrics = train["strategy_metrics"]
-train_trade_metrics = train["trade_metrics"]
-train_buy_hold_metrics = (
-    train["benchmarks"]["buy_hold_open_gross"]["metrics"]
+for period_name, period in result.items():
+    #Extraemos unicamente las metricas de cada benchmark.
+    #Sus curvas completas siguen disponibles en el resultado del runner.
+    benchmark_metrics = {}
+
+    for benchmark_name, benchmark in period["benchmarks"].items():
+        benchmark_metrics[benchmark_name] = benchmark["metrics"]
+
+    #Convertimos el resultado del periodo al formato del registro.
+    experiment_results[period_name] = build_period_results(
+        evaluation_index=period["backtest"].index,
+        strategy_metrics=period["strategy_metrics"],
+        closed_trade_metrics=period["trade_metrics"],
+        benchmark_metrics=benchmark_metrics,
+    )
+
+#Comprobamos que ningun periodo desaparece durante la conversion.
+assert set(experiment_results) == {"train", "validation", "test"}, (
+    "The experiment record must contain all three periods."
 )
-train_buy_hold_net_metrics = (
-    train["benchmarks"]["buy_hold_open_entry_cost"]["metrics"]
-)
 
-test_results = test["backtest"]
-test_strategy_metrics = test["strategy_metrics"]
-test_trade_metrics = test["trade_metrics"]
-test_buy_hold_metrics = (
-    test["benchmarks"]["buy_hold_open_gross"]["metrics"]
-)
-test_buy_hold_net_metrics = (
-    test["benchmarks"]["buy_hold_open_entry_cost"]["metrics"]
-)
-
-# ============================================================
-# 7. RESULTADOS ESTRUCTURADOS DEL EXPERIMENTO
-# ============================================================
-
-experiment_results = {
-    "train": build_period_results(
-        evaluation_index=train_results.index,
-        strategy_metrics=train_strategy_metrics,
-        closed_trade_metrics=train_trade_metrics,
-        benchmark_metrics={
-            "buy_hold_open_gross": train_buy_hold_metrics,
-            "buy_hold_open_entry_cost": train_buy_hold_net_metrics,
-        },
-    ),
-    "test": build_period_results(
-        evaluation_index=test_results.index,
-        strategy_metrics=test_strategy_metrics,
-        closed_trade_metrics=test_trade_metrics,
-        benchmark_metrics={
-            "buy_hold_open_gross": test_buy_hold_metrics,
-            "buy_hold_open_entry_cost": test_buy_hold_net_metrics,
-        },
-    ),
-}
-
-#Verificamos que cada apartado conserva el resultadod de su periodo.
-for period_name, source_results in (
-    ("train", train_results),
-    ("test", test_results),
-):
+#Verificamos cada registro contra el resultado que lo origino.
+for period_name, period in result.items():
+    source_results = period["backtest"]
     period_record = experiment_results[period_name]
 
     assert period_record["period"]["rows"] == len(source_results), (
         f"{period_name}: incorrect evaluation row count."
     )
+
+    assert (
+        period_record["period"]["start"]
+        == source_results.index[0].isoformat()
+    ), f"{period_name}: incorrect start date."
+
+    assert (
+        period_record["period"]["end"]
+        == source_results.index[-1].isoformat()
+    ), f"{period_name}: incorrect end date."
 
     recorded_final_value = (
         period_record["strategy"]["metrics"]["Final Value"]

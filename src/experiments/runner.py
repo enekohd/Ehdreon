@@ -6,6 +6,7 @@ from src.backtesting.benchmarks import calculate_buy_hold
 from src.metrics import calculate_metrics
 from src.trades import build_trade_log, calculate_trade_metrics
 from src.strategies.sma_strategies import apply_sma_strategies
+from src.research.splits import split_temporal_data
 
 
 def evaluate_period(
@@ -135,42 +136,51 @@ def run_experiment(
         slow_window=config.slow_window,
     )
 
-    #3. Separamos cronologicamente los periodos.
-    train_data = strategy_data.loc[
-        strategy_data.index < config.split_date
-    ].copy()
+    #3. Dividimos los datos con las fronteras de la configuracion.
+    periods = split_temporal_data(
+        strategy_data,
+        validation_start=config.validation_start,
+        test_start=config.test_start,
+    )
 
-    test_data = strategy_data.loc[
-        strategy_data.index >= config.split_date
-    ].copy()
-
-    if train_data.empty or test_data.empty:
-        raise ValueError("TRAIN and TEST must both contain observations.")
-
-    #4. Exigimos medias disponibles al comienzo de TEST.
     sma_columns = [
         f"SMA_{config.fast_window}",
         f"SMA_{config.slow_window}",
     ]
 
-    if not test_data.iloc[0][sma_columns].notna().all():
-        raise ValueError("The first TEST row must have valid SMA features.")
+    results = {}
 
-    #Una fila de contexto de ejecucion; las SMA ya estan calculadas.
-    test_with_context = strategy_data.loc[
-        train_data.index[-1]:
-    ].copy()
+    #4. Evaluamos cada periodo con capital independiente.
+    for name, period_data in periods.items():
+        if name == "train":
+            #TRAIN comienza sin una señal previa de contexto.
+            backtest_data = period_data
 
-    #5. Evaluamos ambos periodos con capital inicial independiente.
-    return{
-        "train": evaluate_period(
-            train_data,
-            evaluation_index=train_data.index,
-            config=config,
-        ),
-        "test": evaluate_period(
-            test_with_context,
-            evaluation_index=test_data.index,
+        else:
+            #Conservamos la exigencia de disponer de medias al comenzar
+            #los periodos posteriores a TRAIN.
+            if not period_data.iloc[0][sma_columns].notna().all():
+                raise ValueError(
+                    f"The first {name.upper()} row must have valid SMA features."
+                )
+
+            #Localizamos los extremos del periodo en los datos completos.
+            first_position = strategy_data.index.get_loc(
+                period_data.index[0]
+            )
+            last_position = strategy_data.index.get_loc(
+                period_data.index[-1]
+            )
+
+            #Añadimos exactamente una fila anterior.
+            #El limite final de iloc es exclusivo.
+            backtest_data = strategy_data.iloc[
+                first_position - 1:last_position + 1
+            ].copy()
+
+        results[name] = evaluate_period(
+            backtest_data,
+            evaluation_index=period_data.index,
             config=config,
         )
-    }
+    return results

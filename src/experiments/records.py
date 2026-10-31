@@ -26,7 +26,7 @@ def build_experiment_record(
     experiment_record = {
         "experiment_id": experiment_id,
         "created_at": created_at,
-        "schema_version": 2,
+        "schema_version": 3,
         "config": config_data,
         "dataset": {
                 "dataset_id": config.dataset_id,

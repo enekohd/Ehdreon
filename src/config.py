@@ -9,7 +9,8 @@ class ExperimentConfig:
 
     initial_capital: float = 10000.0
     transaction_cost: float = 0.001
-    split_date: str = "2024-01-01"
+    validation_start: str = "2023-01-01"
+    test_start: str = "2024-01-01"
     fast_window: int = 50
     slow_window: int = 200
     dataset_id: str = "SPY_2020-01-01_2026-01-01_snapshot"
@@ -44,18 +45,34 @@ class ExperimentConfig:
         if self.fast_window >= self.slow_window:
             raise ValueError("fast_window must be smaller than slow_window.")
 
-        #3. Fecha: texto, fecha existente y formato canonico.
-        if not isinstance(self.split_date, str):
-            raise TypeError("split_date must be a string.")
+        # 3. Límites temporales: fechas válidas y ordenadas.
+        parsed_boundaries = {}
 
-        try:
-            parsed_date = date.fromisoformat(self.split_date)
-        except ValueError as error:
+        for name in ("validation_start", "test_start"):
+            value = getattr(self, name)
+
+            if not isinstance(value, str):
+                raise TypeError(f"{name} must be a string.")
+
+            try:
+                parsed_date = date.fromisoformat(value)
+            except ValueError as error:
+                raise ValueError(
+                    f"{name} must be a valid date in YYYY-MM-DD format."
+                ) from error
+
+            if parsed_date.isoformat() != value:
+                raise ValueError(f"{name} must use YYYY-MM-DD format.")
+
+            parsed_boundaries[name] = parsed_date
+
+        if (
+            parsed_boundaries["validation_start"]
+            >= parsed_boundaries["test_start"]
+        ):
             raise ValueError(
-                "split_date must be a valid date in YYYY-MM-DD format."
-            ) from error
-        if parsed_date.isoformat() != self.split_date:
-            raise ValueError("split_date must use YYYY-MM-DD format.")
+                "validation_start must precede test_start."
+            )
 
         #4. Identificador simple, no una ruta de archivos.
         if not isinstance(self.dataset_id, str):

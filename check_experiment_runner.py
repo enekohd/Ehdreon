@@ -5,8 +5,13 @@ from src.config import ExperimentConfig
 from src.experiments.runner import run_experiment
 
 #Datos sinteticos validos y faciles de calcular a mano.
-dates = pd.date_range("2024-01-01", periods=7, freq="D")
-prices = [100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0]
+dates = pd.date_range("2024-01-01", periods=9, freq="D")
+
+prices = [
+    100.0, 110.0, 120.0,
+    130.0, 140.0, 150.0,
+    160.0, 170.0, 180.0,
+]
 
 data = pd.DataFrame(
     {
@@ -14,7 +19,7 @@ data = pd.DataFrame(
         "High": prices,
         "Low": prices,
         "Close": prices,
-        "Volume": [1000] * 7,
+        "Volume": [1000] * len(dates),
     },
     index=dates,
 )
@@ -24,7 +29,8 @@ original_data = data.copy(deep=True)
 config = ExperimentConfig(
     initial_capital=1000.0,
     transaction_cost=0.0,
-    split_date="2024-01-05",
+    validation_start="2024-01-05",
+    test_start="2024-01-08",
     fast_window=2,
     slow_window=3,
 )
@@ -32,20 +38,28 @@ config = ExperimentConfig(
 result = run_experiment(data, config)
 
 train = result["train"]
+validation = result["validation"]
 test = result["test"]
 
-assert set(result) == {"train", "test"}
+assert set(result) == {"train", "validation", "test"}
 
-#La primera fila original se elimina durante la preparacion.
+#1. Cada resultado contiene unicamente las fechas de su periodo.
 assert train["backtest"].index.equals(dates[1:4])
-assert test["backtest"].index.equals(dates[4:])
+assert validation["backtest"].index.equals(dates[4:7])
+assert test["backtest"].index.equals(dates[7:])
 
-assert train["backtest"].index.intersection(
-    test["backtest"].index
-).empty
+#Al unir los resultados recuperamos todas las fechas preparadas,
+#en orden y sin filas de contexto adicionales.
+combined_index = (
+    train["backtest"].index
+    .append(validation["backtest"].index)
+    .append(test["backtest"].index)
+)
 
-#La señal aparece a cierre del ultimo dia de TRAIN.
-#Todavia no existe una apertura posterior dentro de TRAIN para ejecutarla.
+assert combined_index.equals(dates[1:])
+
+#2. TRAIN genera la primera señal al cierre de su ultimo dia.
+#Todavia no puede ejecutarla dentro de TRAIN.
 np.testing.assert_array_equal(
     train["backtest"]["Position"].to_numpy(),
     [0.0, 0.0, 0.0],
@@ -58,33 +72,43 @@ np.testing.assert_allclose(
     atol=1e-10,
 )
 
-#TEST compra a 140 utilizando la señal anterior.
-#No gana la subida desde 130 a 140.
-np.testing.assert_array_equal(
-    test["backtest"]["Trade"].to_numpy(),
-    [1.0, 0.0, 0.0],
-)
+#3. VALIDATION y TEST compran en su primera apertura.
+# No heredan capital ni ganancias del periodo anterior.
 
-np.testing.assert_allclose(
-    test["backtest"]["StrategyEquity"].to_numpy(),
-    [
-        1000.0,
-        1000.0 * 150.0 / 140.0,
-        1000.0 * 160.0 / 140.0,
-    ],
-    rtol=0,
-    atol=1e-10,
-)
+for period, period_prices in (
+    (validation, [140.0, 150.0, 160.0]),
+    (test, [170.0, 180.0]),
+):
+    expected_trades = [1.0] + [0.0] * (len(period_prices) - 1)
 
-#Cada benchmark compra en la primera apertura de su propio periodo.
-for period, expected_prices in (
+    np.testing.assert_array_equal(
+        period["backtest"]["Trade"].to_numpy(),
+        expected_trades,
+    )
+
+    expected_equity = (
+        1000.0
+        * np.array(period_prices)
+        / period_prices[0]
+    )
+
+    np.testing.assert_allclose(
+        period["backtest"]["StrategyEquity"].to_numpy(),
+        expected_equity,
+        rtol=0,
+        atol=1e-10,
+    )
+
+#4. Cada benchmark comienza en la primera apertura de su periodo.
+for period, period_prices in (
     (train, [110.0, 120.0, 130.0]),
-    (test, [140.0, 150.0, 160.0]),
+    (validation, [140.0, 150.0, 160.0]),
+    (test, [170.0, 180.0]),
 ):
     expected_equity = (
         1000.0
-        * np.array(expected_prices)
-        / expected_prices[0]
+        * np.array(period_prices)
+        / period_prices[0]
     )
 
     for benchmark in period["benchmarks"].values():
@@ -95,11 +119,14 @@ for period, expected_prices in (
             atol=1e-10,
         )
 
-#No hay ninguna operacion cerrada: TEST mantiene su posicion.
-assert train["trade_log"].empty
-assert test["trade_log"].empty
+#5. No forzamos el cierre de las posiciones al terminar.
+for period in result.values():
+    assert period["trade_log"].empty
+
+assert validation["backtest"]["Quantity"].iloc[-1] > 0
 assert test["backtest"]["Quantity"].iloc[-1] > 0
 
+#6. El runner conserva intactos los datos recibidos.
 pd.testing.assert_frame_equal(data, original_data)
 
-print("Experiment runner preparation and temproal boundary checks passed.")
+print("Three-period experiment runner checks passed.")

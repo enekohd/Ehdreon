@@ -2,7 +2,7 @@ def build_experiment_conventions() -> dict:
     """Describe las reglas del experimento SMA actual."""
 
     return{
-        "conventions_version": 1,
+        "conventions_version": 2,
         "strategy": {
             "name": "sma_trend",
             "family": "trend_following",
@@ -38,6 +38,9 @@ def build_experiment_conventions() -> dict:
             "trade_metrics_scope": "closed_trades_only",
             "test_usage": "previously_observed_during_development",
             "untouched_final_holdout": False,
+            "periods": ["train", "validation", "test"],
+            "validation_usage": "development_and_candidate_selection",
+            "context_in_metrics": False,
         },
         "benchmarks": {
             "buy_hold_open_gross": {

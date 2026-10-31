@@ -4,7 +4,20 @@ from src.experiments.conventions import build_experiment_conventions
 
 conventions = build_experiment_conventions()
 
-assert conventions["conventions_version"] == 1
+assert conventions["conventions_version"] == 2
+
+assert conventions["evaluation"]["periods"] == [
+    "train",
+    "validation",
+    "test",
+]
+
+assert conventions["evaluation"]["context_in_metrics"] is False
+
+assert(
+    conventions["evaluation"]["validation_usage"]
+    == "development_and_candidate_selection"
+)
 
 assert conventions["strategy"]["signal_rule"] == "fast_sma > slow_sma"
 assert conventions["strategy"]["otherwise_signal"] == 0
@@ -60,5 +73,6 @@ for benchmark_name, expected in expected_entry_commissions.items():
         conventions["benchmarks"][benchmark_name]["entry_commission"]
         == expected
     ), f"{benchmark_name}: incorrect entry commission convention."
+
 
 print("Experiment convention structure checks passed.")
