@@ -79,7 +79,7 @@ experiment_record = build_experiment_record(
     dataset_sha256=calculated_sha256,
     code_info=code_info,
     environment_info=environment_info,
-    conventions=build_experiment_conventions(),
+    conventions=build_experiment_conventions(config),
 )
 
 record_json = json.dumps(

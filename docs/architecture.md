@@ -23,6 +23,34 @@ Las posiciones abiertas no se liquidan automáticamente al final del periodo.
 main.py coordina la carga, la obtención de metadatos, la presentación
 y la persistencia. Delega el cálculo en src/experiments/runner.py.
 
+## Registro de estrategias
+
+src/strategies/registry.py permite consultar una estrategia por nombre.
+Actualmente solo está registrada sma_trend, versión "1".
+
+Cada definición contiene nombre, versión, familia, descripción,
+nombres de parámetros y una referencia a la función ejecutable.
+
+ExperimentConfig.strategy_name identifica la estrategia solicitada.
+La configuración valida el formato del nombre; el registro comprueba
+que exista. Un nombre desconocido produce un error explícito.
+
+El runner obtiene la función desde el registro y la ejecuta.
+Las convenciones consultan el mismo registro para guardar la identidad
+y versión de la estrategia. La función ejecutable no se guarda en JSON.
+
+Cambiar las ventanas modifica los parámetros del experimento, no
+necesariamente la versión de implementación.
+
+Este registro es mínimo: la configuración, las comprobaciones de
+calentamiento y parte de las convenciones todavía son específicas de SMA.
+Añadir una entrada al registro no garantiza que el runner pueda ejecutar
+cualquier otra estrategia.
+
+Las pruebas comprueban la consulta, el rechazo de nombres desconocidos,
+el aislamiento de las definiciones y la equivalencia con la llamada
+directa a SMA.
+
 ## Ejecución del experimento
 
 run_experiment(data, config):
@@ -137,7 +165,7 @@ Una métrica no disponible se distingue de una métrica cuyo valor es cero.
 - records.py: construye registros, adjunta resultados y guarda JSON.
 - serialization.py: representa métricas y fechas sin alterar sus cálculos.
 - results.py: organiza resultados por periodo, estrategia y benchmark.
-- runner.py: prepara y ejecuta el cálculo de TRAIN y TEST sin operaciones
+- runner.py: prepara y ejecuta el cálculo de TRAIN, VALIDATION y TEST sin operaciones
   de entrada/salida.
 
 Cada registro contiene identidad, configuración, dataset y hash,
@@ -158,7 +186,7 @@ El modo de creación exclusiva impide sobrescribir archivos existentes.
 Los resultados generados se excluyen de Git.
 Esta exclusión no constituye una copia de seguridad.
 
-Los nuevos registros utilizan schema_version=3 y conventions_version=2.
+Los nuevos registros utilizan schema_version=3 y conventions_version=3.
 Incluyen las dos fronteras temporales y resultados de los tres periodos.
 Los registros anteriores se conservan sin modificar.
 

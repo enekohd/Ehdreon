@@ -5,7 +5,7 @@ from src.backtesting.backtester import run_backtest
 from src.backtesting.benchmarks import calculate_buy_hold
 from src.metrics import calculate_metrics
 from src.trades import build_trade_log, calculate_trade_metrics
-from src.strategies.sma_strategies import apply_sma_strategies
+from src.strategies.registry import get_strategy_definition
 from src.research.splits import split_temporal_data
 
 
@@ -112,6 +112,12 @@ def run_experiment(
     Recibe el snapshot sin la preparacion especifica de main.
     No modifica la entrada ni realiza operaciones de entrada/salida."""
 
+    #Resolvemos la estrategia antes de realizar calculos.
+    strategy_definition = get_strategy_definition(
+        config.strategy_name
+    )
+    strategy_function = strategy_definition["function"]
+
     #1.Conservamos la preparacion del experimento original.
     prepared_data = data.copy(deep=True)
 
@@ -130,7 +136,7 @@ def run_experiment(
     )
 
     #2. Las medias utilizan el cierre actual y los anteriores.
-    strategy_data = apply_sma_strategies(
+    strategy_data = strategy_function(
         prepared_data,
         fast_window=config.fast_window,
         slow_window=config.slow_window,

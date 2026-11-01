@@ -2,9 +2,14 @@ import json
 
 from src.experiments.conventions import build_experiment_conventions
 
-conventions = build_experiment_conventions()
+from src.config import ExperimentConfig
+from src.strategies.registry import get_strategy_definition
 
-assert conventions["conventions_version"] == 2
+config = ExperimentConfig()
+
+conventions = build_experiment_conventions(config)
+
+assert conventions["conventions_version"] == 3
 
 assert conventions["evaluation"]["periods"] == [
     "train",
@@ -36,10 +41,27 @@ assert conventions["evaluation"]["test_context_in_metrics"] is False
 encoded = json.dumps(conventions, allow_nan=False)
 assert json.loads(encoded) == conventions
 
+#La identidad guardada debe proceder del registro
+definition = get_strategy_definition(config.strategy_name)
+
+for field in ("name", "version", "family", "description"):
+    assert conventions["strategy"][field] == definition[field], (
+        f"Recorded strategy {field} does not match the registry."
+    )
+
+assert conventions["strategy"]["parameter_names"] == [
+    "fast_window",
+    "slow_window",
+]
+
+assert "function" not in conventions["strategy"], (
+    "Executable functions must not be included in saved metadata."
+)
+
 #Modificar una llamada no debe alterar las siguientes.
 conventions["execution"]["commission_sides"].append("unexpected")
 
-fresh_conventions = build_experiment_conventions()
+fresh_conventions = build_experiment_conventions(config)
 
 assert fresh_conventions["execution"]["commission_sides"] == [
     "entry",

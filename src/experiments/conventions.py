@@ -1,11 +1,23 @@
-def build_experiment_conventions() -> dict:
-    """Describe las reglas del experimento SMA actual."""
+from src.config import ExperimentConfig
+from src.strategies.registry import get_strategy_definition
+
+def build_experiment_conventions(config: ExperimentConfig) -> dict:
+    """Describe las reglas del experimento SMA seleccionado."""
+
+    strategy_definition = get_strategy_definition(
+        config.strategy_name
+    )
 
     return{
-        "conventions_version": 2,
+        "conventions_version": 3,
         "strategy": {
-            "name": "sma_trend",
-            "family": "trend_following",
+            "name": strategy_definition["name"],
+            "version": strategy_definition["version"],
+            "family": strategy_definition["family"],
+            "description": strategy_definition["description"],
+            "parameter_names": list(
+                strategy_definition["parameter_names"]
+            ),
             "price_field": "Close",
             "signal_rule": "fast_sma > slow_sma",
             "otherwise_signal": 0,

@@ -66,7 +66,7 @@ experiment_record = build_experiment_record(
     config,dataset_sha256=calculate_sha256(snapshot_path),
     code_info=collect_code_info(project_root),
     environment_info=collect_environment_info(),
-    conventions=build_experiment_conventions(),
+    conventions=build_experiment_conventions(config),
 )
 
 print("\nMarket data snapshot loaded:", snapshot_path)

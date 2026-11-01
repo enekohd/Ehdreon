@@ -11,6 +11,7 @@ class ExperimentConfig:
     transaction_cost: float = 0.001
     validation_start: str = "2023-01-01"
     test_start: str = "2024-01-01"
+    strategy_name: str = "sma_trend"
     fast_window: int = 50
     slow_window: int = 200
     dataset_id: str = "SPY_2020-01-01_2026-01-01_snapshot"
@@ -90,4 +91,17 @@ class ExperimentConfig:
         ):
             raise ValueError(
                 "dataset_id must contain only letters, digits, underscores or hyphens."
+            )
+
+        #5. Identificador de estrategia: validamos su formato.
+        #La existencia de la estrategia se comprueba en el registro.
+        if not isinstance(self.strategy_name, str):
+            raise TypeError("strategy_name must be a string.")
+
+        if (
+            not self.strategy_name
+            or self.strategy_name != self.strategy_name.strip()
+        ):
+            raise ValueError(
+                "strategy_name must be non_empty and have no surrounding whitespace."
             )

@@ -12,6 +12,8 @@ assert config.slow_window == 200
 assert alternative_config.fast_window == 20
 assert alternative_config.slow_window == 200
 
+assert config.strategy_name == "sma_trend"
+
 #Crear una configuracion alternativa no cambia la original.
 assert config.fast_window == 50
 
@@ -66,6 +68,10 @@ invalid_cases = [
     ({"dataset_id": ""}, ValueError, "dataset_id"),
     ({"dataset_id": "../another_dataset"}, ValueError, "dataset_id"),
     ({"dataset_id": 123}, TypeError, "dataset_id"),
+    ({"strategy_name": 123}, TypeError, "strategy_name"),
+    ({"strategy_name": ""}, ValueError, "strategy_name"),
+    ({"strategy_name": " sma_trend"}, ValueError, "strategy_name"),
+    ({"strategy_name": "sma_trend "}, ValueError, "strategy_name"),
 ]
 
 for overrides, expected_error, expected_message in invalid_cases:

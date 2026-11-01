@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from dataclasses import replace
 
 from src.config import ExperimentConfig
 from src.experiments.runner import run_experiment
@@ -130,3 +131,22 @@ assert test["backtest"]["Quantity"].iloc[-1] > 0
 pd.testing.assert_frame_equal(data, original_data)
 
 print("Three-period experiment runner checks passed.")
+
+#Conservamos la configuracion valida y cambiamos unicamente el nombre.
+unknown_strategy_config = replace(
+    config,
+    strategy_name = "unknown_strategy",
+)
+
+try:
+    run_experiment(data, unknown_strategy_config)
+except ValueError as error:
+    assert "Unknown strategy" in str(error), (
+        f"Unexpected error: {error}"
+    )
+else:
+    raise AssertionError(
+        "The runner accepted an unknown strategy."
+    )
+
+print("Experiment runner unknown strategy rejection checks passed.")

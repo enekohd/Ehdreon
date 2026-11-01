@@ -27,3 +27,6 @@ data/raw/
 
 # Registros locales generados por los experimentos.
 /artifacts/experiments/
+
+# Comprobaciones y experimentos locales no portátiles.
+/scratch/
