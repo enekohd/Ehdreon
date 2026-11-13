@@ -1,15 +1,30 @@
 from src.config import ExperimentConfig
 from src.strategies.registry import get_strategy_definition
 
-def build_experiment_conventions(config: ExperimentConfig) -> dict:
+def build_experiment_conventions(
+    config: ExperimentConfig,
+    *,
+    mode: str = "full",
+) -> dict:
     """Describe las reglas del experimento SMA seleccionado."""
+
+    if mode not in ("full", "development"):
+        raise ValueError(
+            "mode must be 'full' or 'development'"
+        )
+
+    evaluated_periods = (
+        ["train", "validation"]
+        if mode == "development"
+        else ["train", "validation", "test"]
+    )
 
     strategy_definition = get_strategy_definition(
         config.strategy_name
     )
 
     return{
-        "conventions_version": 3,
+        "conventions_version": 4,
         "strategy": {
             "name": strategy_definition["name"],
             "version": strategy_definition["version"],
@@ -50,7 +65,8 @@ def build_experiment_conventions(config: ExperimentConfig) -> dict:
             "trade_metrics_scope": "closed_trades_only",
             "test_usage": "previously_observed_during_development",
             "untouched_final_holdout": False,
-            "periods": ["train", "validation", "test"],
+            "mode" : mode,
+            "periods": evaluated_periods,
             "validation_usage": "development_and_candidate_selection",
             "context_in_metrics": False,
         },

@@ -107,10 +107,17 @@ def evaluate_period(
 def run_experiment(
     data: pd.DataFrame,
     config: ExperimentConfig,
+    *,
+    mode: str = "full"
 ) -> dict:
     """Ejecuta el experimento SMA sobre datos OHLCV ya validados.
     Recibe el snapshot sin la preparacion especifica de main.
     No modifica la entrada ni realiza operaciones de entrada/salida."""
+
+    if mode not in ("full", "development"):
+        raise ValueError(
+            "mode must be 'full' or 'development'."
+        )
 
     #Resolvemos la estrategia antes de realizar calculos.
     strategy_definition = get_strategy_definition(
@@ -118,8 +125,26 @@ def run_experiment(
     )
     strategy_function = strategy_definition["function"]
 
+    #Dividimos los datos originales antes de calcular señales.
+    raw_periods = split_temporal_data(
+        data,
+        validation_start=config.validation_start,
+        test_start=config.test_start,
+    )
+
+    selected_names = (
+        ("train", "validation")
+        if mode == "development"
+        else ("train", "validation", "test")
+    )
+
+    #La estrategia solo recibira las filas de los periodos seleccionados
+    selected_data = pd.concat(
+        [raw_periods[name] for name in selected_names]
+    )
+
     #1.Conservamos la preparacion del experimento original.
-    prepared_data = data.copy(deep=True)
+    prepared_data = selected_data.copy(deep=True)
 
     prepared_data["Return"] = prepared_data["Close"].pct_change()
     prepared_data = prepared_data.dropna()
@@ -142,12 +167,23 @@ def run_experiment(
         slow_window=config.slow_window,
     )
 
-    #3. Dividimos los datos con las fronteras de la configuracion.
-    periods = split_temporal_data(
-        strategy_data,
-        validation_start=config.validation_start,
-        test_start=config.test_start,
-    )
+    #Recuperamos los periodos despues de preparar los datos.
+    #la preparacion puede haber eliminado la primera observacion.
+    periods = {}
+
+    for name in selected_names:
+        period_index = raw_periods[name].index
+
+        period_data = strategy_data.loc[
+            strategy_data.index.isin(period_index)
+        ].copy()
+
+        if period_data.empty:
+            raise ValueError(
+                f"The {name} period is empty after preparation."
+            )
+
+        periods[name] = period_data
 
     sma_columns = [
         f"SMA_{config.fast_window}",

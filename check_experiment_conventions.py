@@ -9,7 +9,7 @@ config = ExperimentConfig()
 
 conventions = build_experiment_conventions(config)
 
-assert conventions["conventions_version"] == 3
+assert conventions["conventions_version"] == 4
 
 assert conventions["evaluation"]["periods"] == [
     "train",
@@ -96,5 +96,48 @@ for benchmark_name, expected in expected_entry_commissions.items():
         == expected
     ), f"{benchmark_name}: incorrect entry commission convention."
 
-
 print("Experiment convention structure checks passed.")
+
+
+#La llamada habitual sigue describiendo una evaluacion completa.
+assert conventions["evaluation"]["mode"] == "full"
+
+#Desarrollo declara unicamente los periodos que evalua.
+development_conventions = build_experiment_conventions(
+    config,
+    mode="development",
+)
+
+assert development_conventions["evaluation"]["mode"] == "development"
+
+assert development_conventions["evaluation"]["periods"] == [
+    "train",
+    "validation",
+]
+
+assert(
+    development_conventions["evaluation"]["untouched_final_holdout"]
+    is False
+)
+
+#Las nuevas convenciones siguen siendo serializables.
+encoded_development = json.dumps(
+    development_conventions,
+    allow_nan=False,
+)
+
+assert json.loads(encoded_development) == development_conventions
+
+#Una errata debe rechazarse tambien al construir los metadatos.
+try:
+    build_experiment_conventions(config, mode="developmnt")
+except ValueError as error:
+    assert "mode must be" in str(error), (
+        f"Unexpected error: {error}"
+    )
+else:
+    raise AssertionError(
+        "Convention builder accepted an unknown mode."
+    )
+
+print("Experiment mode convention checks passed.")

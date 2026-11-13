@@ -84,6 +84,31 @@ por compatibilidad. Esta columna no sustituye los benchmarks por periodo.
 La evaluación requiere al menos dos observaciones y un intervalo
 de al menos un día, de acuerdo con las métricas diarias actuales.
 
+### Modos de evaluación
+
+run_experiment admite un argumento nombrado mode:
+
+- "full": evalúa TRAIN, VALIDATION y TEST.
+- "development": evalúa únicamente TRAIN y VALIDATION.
+- Cualquier otro valor produce ValueError.
+
+El runner mantiene "full" como valor predeterminado por compatibilidad.
+main.py selecciona explícitamente "development" mediante evaluation_mode.
+
+En desarrollo, las filas de TEST se excluyen antes de preparar retornos
+y calcular señales. La estrategia no recibe esas observaciones.
+
+Actualmente el runner sigue recibiendo un snapshot completo y el divisor
+exige que los tres periodos existan. Esta comprobación estructural no
+implica evaluar los precios de TEST.
+
+La misma variable evaluation_mode se pasa al runner y al constructor
+de convenciones. El registro declara el modo y los periodos evaluados;
+se comprueba que coincidan con los resultados guardados.
+
+Esta separación no convierte el TEST histórico ya observado en un
+holdout final intacto.
+
 ## Señales, ejecución y contabilidad
 
 La señal del cierre anterior determina el objetivo en la apertura actual.
@@ -186,7 +211,7 @@ El modo de creación exclusiva impide sobrescribir archivos existentes.
 Los resultados generados se excluyen de Git.
 Esta exclusión no constituye una copia de seguridad.
 
-Los nuevos registros utilizan schema_version=3 y conventions_version=3.
+Los nuevos registros utilizan schema_version=3 y conventions_version=4.
 Incluyen las dos fronteras temporales y resultados de los tres periodos.
 Los registros anteriores se conservan sin modificar.
 

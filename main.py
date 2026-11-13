@@ -33,6 +33,9 @@ ticker = "SPY"
 #Unica configuracion del experimento para esta ejecucion.
 config = ExperimentConfig()
 
+#Modo utilizado tanto para los calculos como para los metadatos.
+evaluation_mode = "development"
+
 # Conservamos temporalmente los nombres que utiliza el resto del main
 initial_capital = config.initial_capital
 transaction_cost = config.transaction_cost
@@ -66,7 +69,10 @@ experiment_record = build_experiment_record(
     config,dataset_sha256=calculate_sha256(snapshot_path),
     code_info=collect_code_info(project_root),
     environment_info=collect_environment_info(),
-    conventions=build_experiment_conventions(config),
+    conventions=build_experiment_conventions(
+        config,
+        mode= evaluation_mode,
+    ),
 )
 
 print("\nMarket data snapshot loaded:", snapshot_path)
@@ -78,31 +84,42 @@ print("Last date:", data.index[-1])
 # 4. EJECUCIÓN DEL EXPERIMENTO
 # ============================================================
 
-result = run_experiment(data, config)
-
-train = result["train"]
-validation = result["validation"]
-test = result["test"]
+result = run_experiment(
+    data,
+    config,
+    mode= evaluation_mode,
+)
 
 # ============================================================
 # 5. COMPROBACIONES DE INTEGRACIÓN Y PRESENTACIÓN
 # ============================================================
 
-assert set(result) == {"train", "validation", "test"}, (
-    "The experiment must contain all three evaluation periods."
+#Los resultados deben coincidir con los periodos declarados.
+expected_periods = experiment_record["conventions"]["evaluation"]["periods"]
+
+assert list(result) == expected_periods, (
+    "Calculated periods do not match the experiment conventions."
 )
 
-train_index = train["backtest"].index
-validation_index = validation["backtest"].index
-test_index = test["backtest"].index
+assert(
+    experiment_record["conventions"]["evaluation"]["mode"]
+    == evaluation_mode
+), "Recorded evaluation mode does not match the requested mode."
 
-assert train_index.max() < validation_index.min(), (
-    "TRAIN must finish before VALIDATION starts."
-)
+#Comprobamos el orden temporal de cada pareja de periodos consecutivos.
+for previous_name, current_name in zip(
+    expected_periods,
+    expected_periods[1:]
+):
+    previous_index = result[previous_name]["backtest"].index
+    current_index = result[current_name]["backtest"].index
 
-assert validation_index.max() < test_index.min(), (
-    "VALIDATION must finish before TEST starts."
-)
+    assert previous_index.max() < current_index.min(), (
+        f"{previous_name} must finish before {current_name} starts."
+    )
+
+print("\nEvaluation mode:", evaluation_mode)
+print("Evaluated periods:", ", ".join(expected_periods))
 
 for period_name, period in result.items():
     backtest = period["backtest"]
@@ -190,8 +207,8 @@ for period_name, period in result.items():
     )
 
 #Comprobamos que ningun periodo desaparece durante la conversion.
-assert set(experiment_results) == {"train", "validation", "test"}, (
-    "The experiment record must contain all three periods."
+assert list(experiment_results) == expected_periods, (
+    "Serialized periods do not match the experiment conventions."
 )
 
 #Verificamos cada registro contra el resultado que lo origino.
@@ -299,3 +316,18 @@ assert saved_record == completed_record, (
 )
 
 print("Experiment record saved:", experiment_path)
+
+saved_evaluation = saved_record["conventions"]["evaluation"]
+
+assert saved_evaluation["mode"] == evaluation_mode
+
+assert list(saved_record["results"]) == saved_evaluation["periods"], (
+    "Saved results do not match the declared evaluation periods."
+)
+
+if evaluation_mode == "development":
+    assert "test" not in saved_record["results"], (
+        "A development record must not contain TEST results."
+    )
+
+print("Saved experiment mode and period checks passed.")
