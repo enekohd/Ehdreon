@@ -82,6 +82,10 @@ El redondeo de presentación no se utiliza para determinar empates.
 Una diferencia pequeña tampoco constituye por sí sola evidencia
 de superioridad estadística.
 
+La numeración utiliza ranking de competición: 1, 1, 3.
+Los candidatos empatados mantienen su orden de entrada para presentación;
+ese orden no representa superioridad entre ellos.
+
 ## Información complementaria
 
 Para cada candidato se conservarán:
