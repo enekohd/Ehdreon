@@ -114,3 +114,31 @@ def build_validation_score(
     split_rankable_scores([score])
 
     return score
+
+def build_score_from_development_record(
+        candidate_id: str,
+        record: dict,
+) -> dict:
+    """Extrae el score VALIDATION de un registro de desarrollo."""
+
+    evaluation = record["conventions"]["evaluation"]
+
+    if evaluation["mode"] != "development":
+        raise ValueError("Ranking requires a development record.")
+
+    if evaluation["periods"] != ["train", "validation"]:
+        raise ValueError(
+            "Development conventions must declare TRAIN and VALIDATION."
+        )
+
+    results = record["results"]
+
+    if set(results) != {"train", "validation"}:
+        raise ValueError(
+            "Development results must contain only TRAIN and VALIDATION."
+        )
+
+    return build_validation_score(
+        candidate_id,
+        results["validation"]
+    )
