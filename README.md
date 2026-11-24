@@ -1,5 +1,13 @@
 # Ehdreon
 
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![pandas](https://img.shields.io/badge/pandas-Data%20Analysis-150458?logo=pandas&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-Numerical%20Computing-013243?logo=numpy&logoColor=white)
+![Git](https://img.shields.io/badge/Git-Version%20Control-F05032?logo=git&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Active%20Development-orange)
+![Focus](https://img.shields.io/badge/Focus-Quantitative%20Research-blue)
+
 **Reproducible quantitative research infrastructure for designing, backtesting and validating systematic trading strategies.**
 
 Ehdreon is an evolving quantitative research platform built to turn investment hypotheses into controlled, traceable and reproducible experiments.
